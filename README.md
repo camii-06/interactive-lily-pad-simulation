@@ -60,5 +60,6 @@ Technical and conceptual inspiration was drawn from the work of
 
 - Creativeguru97 (Kazuki Umeda): https://github.com/Creativeguru97
 - Akanksha Vyas and Portia Morrell: https://p5js.org/tutorials/speak-with-your-hands/
+- Daniel Shiffman (The Coding Train): https://github.com/shiffman
 
 The final implementation, structure, and interaction system were built independently.
