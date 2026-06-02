@@ -2,9 +2,13 @@
 
 A Voronoi-based water animation featuring an interactive lily pad that can be grabbed and moved using camera-based hand tracking with ml5.js and rendered in p5.js.
 
-## Overview
+## System Overview
 
-This project explores interactive and generative environments using p5.js and ml5.js. Interaction is based on real-time hand tracking through a webcam, allowing the user to manipulate a floating lily pad within the simulation. 
+This project explores interactive and generative environments combining:
+- Voronoi-based distance field simulation for dynamic water rendering
+- Perlin noise-based temporal distortion
+- Real-time hand tracking using ml5.js library
+- Gesture-based interaction with pinch detection using webcam input
 
 ## Features
 
@@ -37,10 +41,12 @@ This project explores interactive and generative environments using p5.js and ml
 - **ml5.js** - hand pose detection
 - **JavaScript** - interaction logic
 
-## Difficulties encountered
+## Challenges and Constraints 
 
-- Performance varies depending on device and browser; optimized for modern Chromium-based environments
-- Calculations had to be simplified or modified to prevent crashes 
+- Real-time pixel-level Voronoi computation required significant optimization due to high computational cost
+- Maintaining stable frame rates required reducing simulation resolution and optimizing pixel operations
+- Integrating ml5.js HandPose tracking introduced additional latency and required careful tuning for stable pinch detection
+- The system was optimized specifically for Chromium-based browsers to ensure consistent real-time performance
 
 ## Status 
 
