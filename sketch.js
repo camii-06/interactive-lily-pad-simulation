@@ -1,30 +1,29 @@
 /*
-* -------- PART 1 -----------
+* -------- PART 1: Voronoi water -----------
 *
-* This is a randomized water surface animation using Voronoi-style rendering. 
-* ---> small note: many operartions were simplified and optimized during iterative updates to the program
-*
-* ---> small note on res variable: breaks if not a divisor of 720 cus i didnt want to calculate floor for each pixel cus that makes the program even heavier to run. should work fine for any divisor of 720
+* This is a randomized water surface animation using Voronoi-style rendering. Optimized for Chromium-based environments.
+* ---> small note: many operations were simplified and optimized during iterative development
+* ---> about the res variable: must be a divisor of the canvas size (720) to avoid additional coordinate calculations during rendering
+* ---> Voronoi water inspired by Kazuki Umeda's work, whose GitHub is linked in README.md :) 
 * 
-* ---> inspired by Kazuki Umeda :) 
-* 
-* ----------- PART 2 ------------
+* ----------- PART 2: Drag-and-drop lily pad ------------
 *
-* ---->>> HII!! This is a program to drag and drop a lily pad!! it takes input from the camera and theres a whole lot it calculates once again that i read the p5js library of ml5 for. 
-*
-* ----> it is a pinch and drag input! pinch the lily pad virtually with your index and thumb pinched in the air to pick it up and drag it, and open your hand to let it go.
-*
-* ----> there are dots to help guide you to see the rest of your hand. teal = general finger guide points -- White = midpoint between index and thumb -- red = midpoint =<40 pixels in distance
-*
+* Interactive lily pad controlled through webcam-based hand tracking.
+* Pinch the lily pad virtually with your index and thumb pinched in the air to pick it up and drag it, and open your hand to let it go.
+* There are dots to help guide you to see the rest of your hand. 
+*     Teal = general finger guide points 
+*     White = midpoint between index and thumb 
+*     Red = midpoint <= 40 pixels from thumb tip and index tip
 */
 
 /**
 * fields 
 */
-let points = []; // handles movement
-let t = 0; // handles animating
-let res = 12; // had to downscale otherwise too beefy for computer rendering. higher = less total pixels, lower = more total pixels 
-let lowRes; // handles lots of math for movement
+// part 1 vars
+let points = []; // Voronoi seed points
+let t = 0; // animation time parameter
+let res = 12; // downscales rendering. higher = less total pixels, lower = more total pixels 
+let lowRes; // low-resolution render buffer
 
 // part 2 vars 
 let handPose; 
@@ -32,10 +31,9 @@ let video; // handles video input
 let hands = []; // handles hands that can be detected
 let lilyPads = []; // handles lily pads 
 
-let flowerLayer; // different layer for flower because otherwise... the flower just...wont...draw? it was very weird to debug idk.
-
+let flowerLayer; // different layer for flower rendering
 /**
-* preloading hand posees
+* preload hand poses
 */
 function preload() {
   handPose = ml5.handPose(); 
@@ -47,12 +45,12 @@ function preload() {
 function setup() {
   createCanvas(720, 720);
   
-  // makes a smaller version to make the whole thing not die trying to render
+  // downscales rendering
   lowRes = createGraphics(width / res, height / res);
-  lowRes.pixelDensity(1); // basically "each pixel is one pixel"
+  lowRes.pixelDensity(1); 
 
   
-  // makes the points move with each other
+  // initialize Voronoi seed points 
   for (let i = 0; i < 20; i++) {
     points.push({
       x: random(lowRes.width),
@@ -76,15 +74,15 @@ function setup() {
   lilyPads.push(new LilyPad(width / 2, height / 2));
   
   
-  // handle video stuff
+  // begin capturing video 
   video = createCapture(VIDEO);
   video.size(width, height);
   
-  // from library, look at gothands function below (also from library). basically handles hand movement stuff
+  // start hand tracking and stream detections to gotHands() 
   handPose.detectStart(video, gotHands);
 
-  video.hide(); // here for efficeincy because otherwise your computer will try handling both the video AND the water AND the movement and thats !! no bueno !!
-    print("video load successful"); // feedback to user
+  video.hide(); // hide video capture for efficiency 
+    print("video load successful"); // feedback to user 
 }
 
 
@@ -97,27 +95,22 @@ function draw() {
 
   lowRes.loadPixels(); // pixel array access
 
-  // rowcol traversal to make pixels be colored correctly in movement (I dont like the O(x * y * points) time efficiency but there isnt a way to optimize it that i can think of other than making less points which is nuh uh)
+  // traverse render buffer and compute Voronoi shading for each pixel (O(width * height * points))
   for (let y = 0; y < lowRes.height; y++) {
     for (let x = 0; x < lowRes.width; x++) {
       
-      // motion handling (funky, had to google some                  references for this)
+      // Perlin noise motion handling 
       let n1 = noise(x * 0.05, y * 0.05, t * 0.5) * 15;
       let nx = x + n1;
       let ny = y + n1;
 
-      // distance handling, same as above
-      // 2 closest points 
-      // also for setup of the points
+      // tracks distances to the two nearest Voronoi seed points
       let d1 = 1000;
       let d2 = 1000;
 
-      // loop through all of the points 
-      // why? 
-      // *animation :D*
+      // loop through all of the points for animation
       for (let p of points) {
-        // for each point movement and distances changing
-        // sin and cos make it more glooby
+        // sin and cos waves make movement more organic
         let px = p.originX + sin(t + p.offset) * 15;
         let py = p.originY + cos(t + p.offset) * 15;
         let dx = nx - px;
@@ -136,39 +129,38 @@ function draw() {
       // turn the difference into a shading of the color
       // big difference = far away from any other point = darker
       // small difference = close to other points = lighter
-      // taking sqrt outsise of the loop for efficiency's sake
+      // taking sqrt outside of the loop for efficiency's sake
       let difference = sqrt(d2) - sqrt(d1);
       
-      // this map handles the coloring directly, for shading stuff on the pixels. yay for maps, they made this a lot easier than what i was trying to do before
+      // this map handles the shading directly
       let b = map(difference, 0, 10, 255, 50, true);
 
-      // actual coloring time !!!! figured out most numbers by just messing with it and seeing what i liked best tbh lol you can change most of these and its chill
-      let i = (x + y * lowRes.width) * 4; // if this 4 isnt a 4 it does not work as intended 
+      // colors the pixels
+      let i = (x + y * lowRes.width) * 4; // this 4 must be a 4, otherwise coloring will not work as intended
       lowRes.pixels[i]     = b * 0.2; 
       lowRes.pixels[i + 1] = b + 13; 
       lowRes.pixels[i + 2] = b;     
-      lowRes.pixels[i + 3] = 240; // smoothness of the color transition between colors of pixels gets affected, can be lower or higher, cannot be 0
+      lowRes.pixels[i + 3] = 240; // smoothness of the color transition between colors of pixels, can be lower or higher, cannot be 0
     }
   }
   
-  // keeps animation going updating pixels
+  // keeps updating pixels
   lowRes.updatePixels();
 
-  // if you disable this its less pixelated but i like the look of the pixels as a personal preference 
-  // ---- disabled in part 2 for aesthetics ----
+  // if enabled the water will be in a more pixelated style
   // noSmooth(); 
   
-  // create the image :D
+  // creates the image
   image(lowRes, 0, 0, width, height);
 
-  // FPS display in the corner for funsies, should be between 59 and 60 smooth cus of optimization!
+  // FPS display in the corner. Up to 60FPS in optimization testing in Chromium-based environments.
   fill(255);
   text("FPS: " + floor(frameRate()), 10, 10);
   
   
   // ---------- part 2 drawing ---------
   
-  // access the points array to make the pinching function taking into account the pointer finger and thumb
+  // access keypoints array from the ml5.js library to make the pinching function with the finger tip and thumb tip
   if (hands.length > 0) {
     let hand = hands[0];
     let thumb = hand.keypoints[4];
@@ -180,19 +172,19 @@ function draw() {
     let indexX = width - index.x; 
     let indexY = index.y;
 
-    // midpoint between these for defining if grabbing 
+    // midpoint between these keypoints for defining if user is pinching 
     let midX = (thumbX + indexX) / 2; 
     let midY = (thumbY + indexY) / 2;
     
     // detect pinch, at most 40 px between pointer and thumb to pinch
     let pinchDist = dist(thumbX, thumbY, indexX, indexY);
-    let isPinching = pinchDist < 40;
+    let isPinching = pinchDist <= 40;
 
-    // visual feedback for grabber (debugging thing i nabbed from the ml5.js library when i was having issues)
+    // visual feedback for user when pinching
     fill(isPinching ? '#FF0000' : '#FFFFFF');
     circle(midX, midY, 10);
 
-    // update lilypad if is pinching
+    // update lilypad location if user is pinching
     for (let pad of lilyPads) {
       pad.update(midX, midY, isPinching);
     }
@@ -203,44 +195,32 @@ function draw() {
     pad.display(); 
   }
 
-  
-  
-  
-  // FROM THE LIBRARY FOR DEBUGGING SEEING THE POINTS
-  
+  // visualizes all points in keypoints array 
   if (hands && hands.length > 0) {
     for (let i = 0; i < hands.length; i++) {
       let hand = hands[i];
       for (let j = 0; j < hand.keypoints.length; j++) {
         let keypoint = hand.keypoints[j];
-        fill(0, 300, 255);
+        fill(0, 300, 255); // teal to match water
         noStroke();
         circle(width-keypoint.x, keypoint.y, 10);
       }
     }
-  }
-  
-  
-  
-  
+  }  
 
 }
 
-
-// stuff for hand tracking from ml5 library
+// hand tracking model 
 function modelReady() {
   console.log("Model ready");
 }
 
-// same as above
+// store detected hands from ml5.js in hands array
 function gotHands(results){
   hands = results;
 }
 
-
-
-// LILY PAD OBJECT
-
+// lily pad object 
 class LilyPad {
   constructor(x, y) {
     this.pos = createVector(x, y);
@@ -255,9 +235,7 @@ class LilyPad {
   }
 
   display() {
-    // lily pad drawing
-    
-    // lily pad itself
+    // draws lily pad 
     fill('#289650');
     noStroke();
     arc(this.pos.x, this.pos.y, this.size, this.size, 0.5, TWO_PI - 0.5);
@@ -285,11 +263,12 @@ class LilyPad {
   for (let p of this.points) {
     vertex(p.x, p.y);
   }
-    
+
+  // close flower shape
   endShape(CLOSE);
   pop();
     
-   // limit points so it doesn't get too laggy over time
+   // safeguard limiting unintended point growth
     if (this.points.length > 500) this.points.shift();
   }
 
