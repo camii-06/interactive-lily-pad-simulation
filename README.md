@@ -54,7 +54,7 @@ Completed.
 
 ## Inspiration
 
-This project was developed while studying Voronoi-based rendering techniques commonly used in creative coding. 
+This project was developed while studying Voronoi-based rendering techniques commonly used in creative coding and ml5.js camera input for hand pose detection. 
 
 Technical and conceptual inspiration was drawn from the work of 
 
