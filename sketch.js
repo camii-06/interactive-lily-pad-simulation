@@ -201,7 +201,7 @@ function draw() {
       let hand = hands[i];
       for (let j = 0; j < hand.keypoints.length; j++) {
         let keypoint = hand.keypoints[j];
-        fill(0, 300, 255); // teal to match water
+        fill(0, 255, 255); // teal to match water
         noStroke();
         circle(width-keypoint.x, keypoint.y, 10);
       }
